@@ -47,6 +47,23 @@ They are located near the top of the file inside the `scan_directory()` function
 
 ## 5. Bonus Features Implemented
 
+**Bonus 1: Cron Job Scheduling**
+I created a separate script (`antivirus-cron.sh`) just for cron. It sleeps for 23 seconds at the start so it runs at exactly second 23 of the minute. It does not have an infinite loop.
+
+**Prerequisites:**
+1. The cron service must be running (`sudo service cron start`).
+2. Make the script executable by running `chmod +x antivirus-cron.sh`.
+
+**Step-by-Step Manual (Run every minute at second 23):**
+1. Type `crontab -e` in your terminal to open the editor.
+2. Add this exact line to the bottom. (Replace the paths with your actual absolute paths. Keep the quotes because of the space in "lab 2"):
+`* * * * * "/path/to/lab 2/antivirus-cron.sh" "/path/to/lab 2/tester" "/path/to/lab 2/malicious_dir" "/path/to/lab 2/whitelist.txt" >> "/path/to/lab 2/cron.log" 2>&1`
+3. Save and close the editor.
+
+**Cron Expression: 3rd Friday of the month at 12:31 AM**
+The 3rd Friday always falls between the 15th and 21st of the month. I used a bash test to check if today is Friday (day 5) before running.
+`31 0 15-21 * * [ "$(date +\%u)" -eq 5 ] && "/path/to/lab 2/antivirus-cron.sh" "/path/to/lab 2/tester" "/path/to/lab 2/malicious_dir" "/path/to/lab 2/whitelist.txt" >> "/path/to/lab 2/cron.log" 2>&1`
+
 **Bonus 2: Whitelist Implementation**
 A whitelist was added so safe files can be ignored by the antivirus.
 
