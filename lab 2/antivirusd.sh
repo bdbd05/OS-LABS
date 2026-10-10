@@ -13,6 +13,6 @@ while true; do
             rm -f "$file"
         fi
         done
-        cp directory-info.new directory-info.last
+        ls -l "$1" > directory-info.last
     fi
 done
