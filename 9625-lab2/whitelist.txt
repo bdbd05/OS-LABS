@@ -1,0 +1,3 @@
+safe.exe
+background_virus.bat
+
