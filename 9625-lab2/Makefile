@@ -10,7 +10,8 @@ all: build
 
 build:
 	mkdir -p "$(MALICIOUS_DIR)"
-
+	mkdir -p "$(SRC_DIR)"
+	
 antivirus: build
 	./antivirusd.sh "$(SRC_DIR)" "$(MALICIOUS_DIR)" "$(INTERVAL)"
 
