@@ -44,3 +44,14 @@ The menu will appear. Follow the numbers on the screen to restore or permanently
 ## 4. Flagged Lists Location
 The flagged extensions (.exe, .bat, .vbs, .scr, .ps1) and the flagged keywords (virus, trojan, malware, worm, ransomware) are hardcoded directly inside `antivirusd.sh`. 
 They are located near the top of the file inside the `scan_directory()` function, written directly into the `if` statement condition.
+
+## 5. Bonus Features Implemented
+
+**Bonus 2: Whitelist Implementation**
+A whitelist was added so safe files can be ignored by the antivirus.
+
+- **How the daemon checks it:** 
+Inside `antivirusd.sh`, before the scanner checks a file for bad extensions or keywords, it runs `if [ -f "whitelist.txt" ] && grep -qix "$filter" whitelist.txt`. The `grep` command silently checks for an exact, case-insensitive match of the filename inside the text file. If a match is found, the script uses `continue` to skip that file entirely.
+
+- **How a file gets added:**
+In `restore.sh`, when the user selects Option 1 to restore a file, the script moves the file back to the watched folder and immediately runs `echo "$target_name" >> whitelist.txt`. This automatically appends the filename to the bottom of the whitelist on a new line so the daemon won't re-quarantine it.

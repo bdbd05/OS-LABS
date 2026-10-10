@@ -28,6 +28,8 @@ while true; do
     if [ "$option" == "1" ]; then
         mv "$target_file" "$1/$target_name"
         echo "Restored $target_name to $1."
+        echo "$target_name" >> whitelist.txt
+        echo "Added $target_name to whitelist."
     elif [ "$option" == "2" ]; then
         rm "$target_file"
         echo "$target_name permanently deleted."

@@ -4,6 +4,9 @@ scan_directory() {
         [ -f "$file" ] || continue
 
         filter=$(basename "$file")
+        if [ -f "whitelist.txt" ] && grep -qix "$filter" whitelist.txt; then
+            continue
+        fi
         if [[ "$filter" == *.exe || "$filter" == *.bat || "$filter" == *.vbs || "$filter" == *.scr || "$filter" == *.ps1 ]] || grep -iqE "virus|trojan|malware|worm|ransomware" "$file"; then
             echo "$filter is malicious and it is DELETED"
             cp "$file" "$2/$filter" && rm -f "$file"
