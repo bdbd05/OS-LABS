@@ -18,10 +18,10 @@
 #include "command.h"
 #include "tokenizer.h"
 
-// Full path to child.log, set once in main() to the folder where the shell was started
+// benhot el full path 3lshan child.log yefdal fel folder elly bada2na menno el shell 7atta law 3amalna cd le makan tany
 std::string logPath;
 
-// Removes the quote marks from a word: "hello" -> hello
+// bensheel el double quotes men el input 3lshan execvp law shafetha haye3teberha goz2 men esm el file aw el argument
 std::string stripQuotes(const std::string &word)
 {
     if (word.size() >= 2 && word[0] == '"' && word[word.size() - 1] == '"')
@@ -31,8 +31,7 @@ std::string stripQuotes(const std::string &word)
     return word;
 }
 
-// Catches bad input before parse() builds anything.
-// Every token list ends with TOKEN_EOF, so tokens[i + 1] is always safe.
+// bn check el syntax el awal abl parse() 3shan law feeh 7aga na2sa zay "ls >" mn gheer filename mybawazsh el table
 bool checkSyntax(std::vector<Token> &tokens)
 {
     for (int i = 0; i < (int)tokens.size(); i++)
@@ -42,14 +41,12 @@ bool checkSyntax(std::vector<Token> &tokens)
         bool isRedirect = (t == TOKEN_REDIRECT || t == TOKEN_APPEND || t == TOKEN_INPUT ||
                            t == TOKEN_ERROR || t == TOKEN_REDIRECT_AND_ERROR);
 
-        // a redirect needs a filename after it
         if (isRedirect && tokens[i + 1].type != TOKEN_ARGUMENT && tokens[i + 1].type != TOKEN_COMMAND)
         {
             fprintf(stderr, "syntax error: '%s' needs a filename after it\n", tokens[i].value.c_str());
             return false;
         }
 
-        // a pipe needs a command before it and after it
         if (t == TOKEN_PIPE)
         {
             if (i == 0 || tokens[i + 1].type == TOKEN_EOF || tokens[i + 1].type == TOKEN_PIPE)
@@ -62,7 +59,7 @@ bool checkSyntax(std::vector<Token> &tokens)
     return true;
 }
 
-// Adds a word as an argument. If it has * or ?, glob() replaces it with the matching files.
+// glob() betfok el * wel ? le asamy el files ely bet-match, w lw mal2ash 7aga by7ot el kelma zy ma hya
 void insertGlobbed(SimpleCommand *cmd, const std::string &word)
 {
     if (word.find_first_of("*?[") == std::string::npos)
@@ -81,19 +78,16 @@ void insertGlobbed(SimpleCommand *cmd, const std::string &word)
     }
     else
     {
-        // no match: keep the word exactly as typed
         cmd->insertArgument(strdup(word.c_str()));
     }
     globfree(&results);
 }
 
-// Turns the token list into the shared command table. It does not run anything.
 void parse(std::vector<Token> &tokens)
 {
     if (!checkSyntax(tokens))
         return;
 
-    // reference, not a copy: we fill the real table that prompt() will run
     Command &currentCommand = Command::_currentCommand;
     SimpleCommand *currentSimpleCommand = new SimpleCommand();
 
@@ -103,7 +97,7 @@ void parse(std::vector<Token> &tokens)
         {
             std::string word = tokens[i].value;
 
-            // "hello world" arrives as two tokens, so join them until one ends with "
+            // el tokenizer bey2assem bel spaces fa "Hello, World!" 3la kaza token, hena bnerga3 nlz2 l7d ma nla2y el quote ely fel akherr
             if (word[0] == '"' && (word.size() < 2 || word[word.size() - 1] != '"'))
             {
                 while (i + 1 < (int)tokens.size() && tokens[i + 1].type != TOKEN_EOF)
@@ -119,7 +113,7 @@ void parse(std::vector<Token> &tokens)
         }
         else if (tokens[i].type == TOKEN_REDIRECT)
         {
-            i++; // the next token is the filename
+            i++;
             currentCommand._outFile = strdup(tokens[i].value.c_str());
         }
         else if (tokens[i].type == TOKEN_INPUT)
@@ -131,7 +125,7 @@ void parse(std::vector<Token> &tokens)
         {
             i++;
             currentCommand._outFile = strdup(tokens[i].value.c_str());
-            currentCommand._append = 1; // append, not overwrite
+            currentCommand._append = 1;
         }
         else if (tokens[i].type == TOKEN_ERROR)
         {
@@ -143,12 +137,12 @@ void parse(std::vector<Token> &tokens)
             i++;
             currentCommand._outFile = strdup(tokens[i].value.c_str());
             currentCommand._errFile = strdup(tokens[i].value.c_str());
-            currentCommand._out_error = 1; // both go to the same file
+            currentCommand._out_error = 1;
             currentCommand._append = 1;
         }
         else if (tokens[i].type == TOKEN_PIPE)
         {
-            // finish this command, start a new empty one for after the |
+            // save el currentSimpleCommand w nbtdy wa7ed gedeed lel command ely ba3d el pipe
             currentCommand.insertSimpleCommand(currentSimpleCommand);
             currentSimpleCommand = new SimpleCommand();
         }
@@ -158,7 +152,7 @@ void parse(std::vector<Token> &tokens)
         }
     }
 
-    // the last command has no | after it, so add it here
+    // a5er command no pipe b3do fa nseebo fel table hena ba3d ma el loop te5las
     currentCommand.insertSimpleCommand(currentSimpleCommand);
 }
 
@@ -169,7 +163,6 @@ SimpleCommand::SimpleCommand()
     _arguments = (char **)malloc(_numberOfAvailableArguments * sizeof(char *));
 }
 
-// Adds one word. The array must always end with NULL, because execvp needs that.
 void SimpleCommand::insertArgument(char *argument)
 {
     if (_numberOfAvailableArguments == _numberOfArguments + 1)
@@ -213,7 +206,6 @@ void Command::insertSimpleCommand(SimpleCommand *simpleCommand)
     _numberOfSimpleCommands++;
 }
 
-// Frees everything and resets the table so the next command starts empty
 void Command::clear()
 {
     for (int i = 0; i < _numberOfSimpleCommands; i++)
@@ -251,7 +243,6 @@ void Command::clear()
     _append = 0;
 }
 
-// Shows the table. Off by default. Turn on by removing the // in execute().
 void Command::print()
 {
     printf("\n\n");
@@ -278,18 +269,30 @@ void Command::print()
     printf("\n\n");
 }
 
-// Runs the table. Each command gets its own child. Pipes connect them in a chain.
 void Command::execute()
 {
-    // print();
-
     if (_numberOfSimpleCommands == 0 || _simpleCommands[0]->_numberOfArguments == 0)
     {
         clear();
         return;
     }
 
-    // the input file is opened once, before the loop, for the first command
+    // cd lazem t execute fy el parent nfso mn 8eir fork(), 3lshan lw fy el child el folder bta3 el shell el asly msh hayet8ayar
+    if (strcmp(_simpleCommands[0]->_arguments[0], "cd") == 0)
+    {
+        const char *dir = (_simpleCommands[0]->_numberOfArguments > 1)
+                              ? _simpleCommands[0]->_arguments[1]
+                              : getenv("HOME");
+        if (dir && chdir(dir) != 0)
+        {
+            perror("cd");
+        }
+        clear();
+        return;
+    }
+
+    print();
+
     int infd = -1;
     if (_inputFile)
     {
@@ -309,7 +312,6 @@ void Command::execute()
         bool last = (i == _numberOfSimpleCommands - 1);
         int fdpipe[2] = {-1, -1};
 
-        // a pipe is needed between this command and the next one
         if (!last)
         {
             if (pipe(fdpipe) == -1)
@@ -323,18 +325,16 @@ void Command::execute()
 
         if (pid == 0)
         {
-            // CHILD: set up 0, 1, 2 here, then become the command.
-            // Never dup2 in the parent, or the shell's own screen changes.
-            signal(SIGINT, SIG_DFL); // child reacts to Ctrl+C like a normal program
+            // dup2 lazem ykon fy el child, lw 3mlnaha fel parent el shell nafso hayet8ayar el output bta3o
+            // return SIGINT default hena 3shan law dosna Ctrl+C yewa2af el command el sha8al msh el shell
+            signal(SIGINT, SIG_DFL);
 
-            // input: from the previous pipe, or from the input file
             if (infd != -1)
             {
                 dup2(infd, 0);
                 close(infd);
             }
 
-            // output: into the next pipe, or the output file, or stays on screen
             if (!last)
             {
                 dup2(fdpipe[1], 1);
@@ -358,7 +358,6 @@ void Command::execute()
                 close(fd);
             }
 
-            // errors: into the error file, unless >>& already sent them to the output
             if (_errFile && !_out_error)
             {
                 int fd = open(_errFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -371,14 +370,11 @@ void Command::execute()
                 close(fd);
             }
 
-            // only reached if execvp failed
             execvp(_simpleCommands[i]->_arguments[0], _simpleCommands[i]->_arguments);
             fprintf(stderr, "myshell: %s: command not found\n", _simpleCommands[i]->_arguments[0]);
             exit(1);
         }
 
-        // PARENT: remember the child, then close the ends it no longer needs.
-        // If the parent keeps a write end open, the next command waits forever.
         pids.push_back(pid);
 
         if (infd != -1)
@@ -386,6 +382,7 @@ void Command::execute()
             close(infd);
         }
 
+        // el parent lazem ye2fel el write end bta3 el pipe,lw sabo maftoo7 el command ely ba3do hyfdal mstanny input
         if (!last)
         {
             close(fdpipe[1]);
@@ -393,25 +390,28 @@ void Command::execute()
         }
     }
 
-    // wait for every child, unless the command ends with &
+    // lw mafeesh & (_background == 0) el shell beyestanna el children t5las, lw background beysebhom sha8aleen w yerga3 lel prompt
     if (!_background)
     {
         for (size_t i = 0; i < pids.size(); i++)
         {
-            waitpid(pids[i], NULL, 0);
+            if (waitpid(pids[i], NULL, 0) > 0)
+            {
+                FILE *f = fopen(logPath.c_str(), "a");
+                if (f)
+                {
+                    fprintf(f, "A child process terminated\n");
+                    fclose(f);
+                }
+            }
         }
     }
 
     clear();
 }
 
-// Prints the prompt with the current folder.
-// Only when typing at a keyboard: piped input gets no prompt, like real bash.
 void showPrompt()
 {
-    if (!isatty(0))
-        return;
-
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL)
     {
@@ -421,7 +421,6 @@ void showPrompt()
     fflush(stdout);
 }
 
-// Main loop: read a line, handle exit and cd here (no fork), otherwise parse and run
 void Command::prompt()
 {
     std::string input;
@@ -431,26 +430,11 @@ void Command::prompt()
     {
         if (input == "exit")
         {
-            printf("\033[31mGood bye!\033[0m\n");
+            printf("Good bye!!\n");
             break;
         }
 
-        // cd must change the shell's own folder, so it can't run in a child
-        if (input.compare(0, 2, "cd") == 0 && (input.size() == 2 || input[2] == ' '))
-        {
-            std::string dir = input.size() > 3 ? input.substr(3) : "";
-            if (dir.empty())
-            {
-                const char *home = getenv("HOME");
-                if (home)
-                    chdir(home);
-            }
-            else if (chdir(dir.c_str()) != 0)
-            {
-                perror("cd");
-            }
-        }
-        else if (!input.empty())
+        if (!input.empty())
         {
             std::vector<Token> tokens = tokenize(input);
             parse(tokens);
@@ -464,8 +448,7 @@ void Command::prompt()
 Command Command::_currentCommand;
 SimpleCommand *Command::_currentSimpleCommand;
 
-// Runs when a child ends. Reaps every finished child and logs each one.
-// Signals can merge, so one signal may mean several children: loop until none are left.
+// loop b WNOHANG 3lshan momken kaza child ye5laso m3 b3d, w b-save errno for the handler
 void logChild(int sig)
 {
     (void)sig;
@@ -486,14 +469,14 @@ void logChild(int sig)
 
 int main()
 {
-    // remember the folder we started in, so the log always goes there
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) != NULL)
         logPath = std::string(cwd) + "/child.log";
     else
         logPath = "child.log";
 
-    signal(SIGINT, SIG_IGN); // the shell ignores Ctrl+C; children don't (see execute)
+    // el shell by ignore Ctrl+C 3shan mye2felsh, bs el children bterga3 SIG_DFL fo2 f execute() 3shan ne2dar nwa2afhom
+    signal(SIGINT, SIG_IGN);
     signal(SIGCHLD, logChild);
 
     Command::_currentCommand.prompt();
